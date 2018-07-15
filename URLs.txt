@@ -1,0 +1,5 @@
+https://ruohanzhan.github.io/fun_proj/trading/report.pdf
+https://github.com/ZhengyaoJiang/PGPortfolio --Implementation in TF
+https://github.com/ZhengyaoJiang/rl-portfolio-management --Price Data
+
+https://www.datacamp.com/community/tutorials/finance-python-trading --useful
