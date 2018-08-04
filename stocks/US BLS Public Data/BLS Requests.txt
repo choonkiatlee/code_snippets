@@ -1,0 +1,54 @@
+------------------ List of Requests for US BLS data ------------------------
+(https://www.bls.gov/developers/api_signature_v2.htm#single)
+API Key: 23e55d66193a4bf5b9273be3d40738b6
+
+###
+
+// Retrieve Timeseries
+
+POST https://api.bls.gov/publicAPI/v2/timeseries/data/?seriesid=LLNS14000000
+content-type: application/json
+
+
+{
+    "seriesid":["LNS14000000","CES0000000001"],
+    "startyear":"2010", 
+    "endyear":"2018",
+    "catalog":false,
+    "calculations":false,
+    "annualaverage":false,
+    "registrationkey":"23e55d66193a4bf5b9273be3d40738b6"
+}
+
+
+###
+
+// Get all surveys
+GET https://api.bls.gov/publicAPI/v2/surveys
+
+###
+
+// Get metadata for 1 surveys
+GET https://api.bls.gov/publicAPI/v2/surveys/?survey_abbreviation=TU
+
+{
+    "survey_abbreviation":"TU"
+}
+
+###
+//Get Series for particular survey
+
+GET https://api.bls.gov/publicAPI/v2/timeseries/popular/
+
+{
+    "survey":"CX"
+}
+
+
+###
+
+//Get popular series
+
+GET https://api.bls.gov/publicAPI/v2/timeseries/popular/
+
+###

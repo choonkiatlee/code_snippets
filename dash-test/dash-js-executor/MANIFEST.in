@@ -1,0 +1,5 @@
+include dash_js_executor/bundle.js
+include dash_js_executor/bundle.js.map
+include dash_js_executor/metadata.json
+include README.md
+include LICENSE.md
