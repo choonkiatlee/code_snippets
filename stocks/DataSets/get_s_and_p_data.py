@@ -10,9 +10,6 @@ import datapackage as dp
 
 import pandas as pd
 
-
-
-
 class s_and_p_symbols:
     url = 'https://datahub.io/core/s-and-p-500-companies/datapackage.json'
 
@@ -29,11 +26,8 @@ class s_and_p_symbols:
         
         return df['Symbol'].drop_duplicates()
 
-    
-    
     def convert_to_dfs(self,package):
-        
-    
+            
         storage_dict= {}
         
         # print processed tabular data (if exists any)
@@ -43,3 +37,9 @@ class s_and_p_symbols:
                 
         return storage_dict
     
+if __name__ == "__main__":
+    sp = s_and_p_symbols()
+    package = dp.Package(sp.url)
+    storage_dict = sp.convert_to_dfs(package)
+    df = storage_dict['constituents']
+    df.to_csv('s_and_p_500_companies_list.csv')
