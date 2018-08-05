@@ -21,8 +21,7 @@ def get_regression_scores(model,x_test,y_test):
     accuracy -- int
     '''
 
-    
-    return sklearn.metrics.r2_score(y_test, rf.predict(x_test))
+    return sklearn.metrics.r2_score(y_test, model.predict(x_test))
 
 def generate_regression_feature_scores(model, x_test, y_test, ordered_feature_names,base_accuracy, as_percentage=False):
     scores = []
@@ -66,14 +65,14 @@ def remove_features(x_train, x_val, x_test, features, ordered_feature_names):
 ################## Generate Dataset #######################################
 np.random.seed(0)
 
-no_features = 5
-no_correlated_features = 0
+no_features = 50
+no_correlated_features = 10
 no_useful_features = 2
 
-size = 1500
+size = 700
 
 mean = 0
-variance = np.random.rand()
+variance = np.random.rand()+2
 
 X = np.zeros((size,no_features))
 
@@ -90,13 +89,13 @@ print("MEAN: {0}, VARIANCEC: {1}".format(mean,variance))
 #X += np.random.uniform(0,1,(size, no_features))
  
 #"Friedamn #1” regression problem
-Y = (10 * np.sin(3*np.pi*X[:,0]*X[:,1]) + 20*(X[:,2] - .5)**2 +
-     10*X[:,3] + 5*X[:,4] + np.random.normal(0,1))
+#Y = (10 * np.sin(np.pi*X[:,0]*X[:,1]) + 20*(X[:,2] - .5)**2 +
+#     10*X[:,3] + 5*X[:,4] + np.random.normal(0,1))
 
-Y = 10* np.sin(1.5*np.pi*X[:,0]*X[:,1])
+Y = 10*(X[:,3] + 1.75*X[:,4] + 2* X[:,0] + 1.5*X[:,1] + 1.25*X[:,2])**2 + np.random.normal(0,variance)
 
 #Add 3 additional correlated variables (correlated with X1-X3)
-#X[:,10:(10+no_correlated_features)] = X[:,:no_correlated_features] #+ np.random.normal(0, .025, (size,no_correlated_features))
+X[:,10:(10+no_correlated_features)] = X[:,:no_correlated_features] + np.random.normal(0, .025, (size,no_correlated_features))
  
 names = ["x%s" % i for i in range(1,no_features+1)]
 
@@ -114,13 +113,22 @@ def plot_dataset():
     #ax2 = fig.add_subplot(212,projection='3d')
     #ax2.scatter(X[:,2],X[:,3],Y)
     
-plot_dataset()
+#plot_dataset()
 
 
 
 ################ Generate train / val / test split #########################
-x_train,x_val,x_test = X[:400],X[400:600],X[600:750]
-y_train,y_val,y_test = Y[:400],Y[400:600],Y[600:750]
+#x_train,x_val,x_test = X[:400],X[400:600],X[600:750]
+#y_train,y_val,y_test = Y[:400],Y[400:600],Y[600:750]
+
+import math
+train_idx = math.floor(size * 0.6)
+val_idx = math.floor(size*0.8)
+test_idx = math.floor(size*1.0)
+
+x_train,x_val,x_test = X[:train_idx],X[train_idx:val_idx],X[val_idx:test_idx]
+y_train,y_val,y_test = Y[:train_idx],Y[train_idx:val_idx],Y[val_idx:test_idx]
+
 
 
 ############### Feature Selection #########################################
@@ -144,12 +152,37 @@ df = generate_regression_feature_scores(rf, x_test, y_test, names, base_accuracy
 
 print("Starting feature removal")
 
-
-top_5_unwanted_features = pd.DataFrame([i for i in range(5)])
+df = df.groupby('feature').mean().sort_values(by='accuracy',ascending=True)
+# Select top 5 unwanted features according to different metrics
+top_5_unwanted_features = df.loc[df['accuracy'] < 0.01].head(5)
+top_5_unwanted_features = df.accuracy.loc[df.accuracy < (df.max().accuracy - 5*df.std().accuracy)].head(5)
+top_5_unwanted_features = df.loc[df.accuracy < df.accuracy.max() * 0.25].head(5)  # remove below 10% of max
 
 ############## Remove Unwanted Features 5 at a time ###################################
 
-while len(top_5_unwanted_features) > 4:
+test_scores = []
+validation_scores = []
+
+while len(top_5_unwanted_features) > 0:
+    
+    unwanted_features = np.array(top_5_unwanted_features.index.values).astype(str)
+    x_train,x_val,x_test,names = remove_features(x_train, x_val, x_test, unwanted_features, names)
+    
+    #print(names)
+    #print(unwanted_features)
+        
+    rf = RandomForestRegressor(n_estimators=300)
+    rf.fit(x_train,y_train)
+    
+    base_accuracy_score = get_regression_scores(rf,x_test,y_test)
+    test_scores.append(base_accuracy_score)
+    print("Base Model on Test Set: Accuracy {0}".format(base_accuracy_score))
+    
+    base_accuracy_score = get_regression_scores(rf,x_val,y_val)
+    validation_scores.append(base_accuracy_score)
+    print("Base Model on Validation Set: Accuracy {0}".format(base_accuracy_score))
+    
+    print("Completed 1 round of feature removal! Removed: \n{0}".format(top_5_unwanted_features.to_string() ))
     
     df = generate_regression_feature_scores(rf, x_test, y_test, names, base_accuracy_score, as_percentage = True)
     df = df.groupby('feature').mean().sort_values(by='accuracy',ascending=True)
@@ -157,28 +190,13 @@ while len(top_5_unwanted_features) > 4:
     # Select top 5 unwanted features according to different metrics
     top_5_unwanted_features = df.loc[df['accuracy'] < 0.01].head(5)
     top_5_unwanted_features = df.accuracy.loc[df.accuracy < (df.max().accuracy - 5*df.std().accuracy)].head(5)
+    top_5_unwanted_features = df.loc[df.accuracy < df.accuracy.max() * 0.25].head(5)  # remove below 10% of max
     
-    unwanted_features = np.array(top_5_unwanted_features.index.values).astype(str)
-    x_train,x_val,x_test,names = remove_features(x_train, x_val, x_test, unwanted_features, names)
+    print("{0} features left!".format(len(df.index.drop_duplicates())))
     
-    #print(names)
-    #print(unwanted_features)
-    
-    print(x_train.shape)
-    
-    rf = RandomForestRegressor(n_estimators=300)
-    rf.fit(x_train,y_train)
-    
-    base_accuracy_score = get_regression_scores(rf,x_test,y_test)
-    print("Base Model on Test Set: Accuracy {0}".format(base_accuracy_score))
-    
-    base_accuracy_score = get_regression_scores(rf,x_val,y_val)
-    print("Base Model on Validation Set: Accuracy {0}".format(base_accuracy_score))
-    
-    print("Completed 1 round of feature removal! Removed: {0}".format(top_5_unwanted_features.to_string() ))
-    
-    
-    
+plt.plot(test_scores,label='test_scores')
+plt.plot(validation_scores,label='validation_scores')
+plt.legend()
 
 '''
 print ('---------------------------------------------------')
