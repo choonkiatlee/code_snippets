@@ -12,6 +12,8 @@ print([c.name for c in tick_data_db.columns])
 print([c.type for c in tick_data_db.columns])
 
 
+
+
 '''
 from sqlalchemy.orm import sessionmaker
 session = sessionmaker()
