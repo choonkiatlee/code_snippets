@@ -1,9 +1,10 @@
 __pycache__/
 .ipynb_checkpoints/
 machine learning/data/
-
+.vscode/
 
 *.pkl
 *.p
 *.csv
+*.db
 
