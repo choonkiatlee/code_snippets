@@ -28,7 +28,20 @@ if [ "$COL_IDX" = "skip" ]
 then 
     echo skipping...
 else
-    echo Data for 1 feature:
+
+    # Check if the input is a number. 
+    "$COL_IDX" -eq "$COL_IDX" 2> /dev/null     # compare $COL_IDX with itself integerwise. If this is false, it will
+					       # throw an error which we redirect to /dev/null
+
+    if [ $? -ne 0 ]
+	then 
+	    echo "Data for 1 feature:"
+	    # get col name for one feature
+	    COL_IDX=$( awk -v var="$COL_IDX" -F'|' 'NR==1{ for (i=1; i<=NF; ++i) { if ($i == var) print i} }' $INPUT_DATABASE )
+	    echo COL_IDX
+    fi  	    
+    echo $COL_IDX
+    echo "Data for 1 feature (By col index):"
     # Cut -d '|' splits by the delimiter '|', then -f1 prints the 1st column etc. 
     head -10 $INPUT_DATABASE | cut -d '|' -f$COL_IDX
     COLNAME="$(head -1 "$INPUT_DATABASE" | cut -d '|' -f"$COL_IDX" )"
@@ -38,7 +51,8 @@ else
 
     if [ "$SAVE" = "yes" ]
     then 
-        awk -F\| '{ print $'${COL_IDX}' }' $INPUT_DATABASE > ${COLNAME}.txt
+	#cat $INPUT_DATABASE | cut -d '|' -f$COL_IDX > ${COLNAME}.txt
+        awk -v var="$COL_IDX" -F\| '{ print $var }' $INPUT_DATABASE > ${COLNAME}.txt
     fi
 fi
 

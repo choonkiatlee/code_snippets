@@ -1,13 +1,13 @@
 import json
 import os, sys
 import pandas as pd
-from datetime import datetime
+import datetime
 
 def load_index(input_filename):
     with open(input_filename) as infile:
         return json.loads(infile.read())
 
-def get_from_file_as_df(index,search_indices):
+def get_from_file_as_df(index,search_indices, delimiter=r'|'):
     
     # assemble list of indices
     index_mapping_list = []
@@ -21,54 +21,73 @@ def get_from_file_as_df(index,search_indices):
 
     output_dict = []
     for byte_offset in index_mapping_list:
-        infile.seek(byte_offset,0)
-        output_dict.append(infile.readline().strip().split('|') )
+        try:
+            infile.seek(byte_offset,0)
+            output_dict.append(infile.readline().strip().split(delimiter) )
+        except TypeError:
+            infile.seek(byte_offset[0],0)
+            output_dict.append(infile.read(byte_offset[1]).strip().split(delimiter))
+        
     
-    return pd.DataFrame(data = output_dict, columns= cols.split('|'))
+    return pd.DataFrame(data = output_dict, columns= cols.split(delimiter))
 
 
 def main(args):
 
     indexes = {}
 
+    if not args:
+        args = ['bank_funda_index.json']
+
     for input_filename in args:
         indexes[os.path.splitext(input_filename)[0]] = load_index(input_filename)
 
-    df = get_from_file_as_df(indexes['test'],['001000|19611231','001000|19621231','001000|19631231','001000|19641231'])
+    df = get_from_file_as_df(indexes['bank_funda_index'],['001178|19741231','001178|19771231','001178|19761231','001178|19851231'])
 
-    print((df))
+    for index in indexes.values():
+        time_index = build_date_time_index_representation(index)
 
-    time_index = build_date_time_index_representation(df)
-
-
-
-
-def build_date_time_index_representation(index):
+def build_date_time_index_representation(index, delimiter=r'|'):
     output_dict = {}
     for item in index.keys():
-        print(item)
-        try:
-            current_date = datetime.strptime(item.split('|')[1] , '%Y%m%d')
-        except IndexError:
-            print(item.split('|'))
-            raise IndexError
-        if current_date in output_dict:
-            output_dict[current_date].append(item)
-        else:
-            output_dict[current_date] = [item]
+        if 'file_pointer' not in item:
+            current_date = datetime.datetime.strptime(item.split(delimiter)[1] , '%Y%m%d')
+
+            if current_date in output_dict:
+                output_dict[current_date].append(item)
+            else:
+                output_dict[current_date] = [item]
     return output_dict
 
 def get_query_from_time(time_indexes,start_date, end_date):
     # produce list of times
     no_days = end_date - start_date
-    dates = [start_date + datetime.time_delta(day) for day in range(no_days)]
-
+    dates = [start_date + datetime.timedelta(day) for day in range(no_days.days)]
+    
     output_list = []
 
     for date in dates:
-        output_list.extend(time_indexes[date])
+        print(time_indexes.get(date,[]))
+
+        output_list.extend(time_indexes.get(date,[]))
 
     return output_list
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    
+    indexes = {}
+
+    if not sys.argv[1:]:
+        args = ['bank_funda_index.json']
+
+    for input_filename in args:
+        indexes[os.path.splitext(input_filename)[0]] = load_index(input_filename)
+
+    df = get_from_file_as_df(indexes['bank_funda_index'],['001178|19741231','001178|19771231','001178|19761231','001178|19851231'])
+
+    for index in indexes.values():
+        time_index = build_date_time_index_representation(index)#
+        
+    get_query_from_time(time_index,datetime.date(1960,12,31),datetime.date(1970,12,31))
+    
+    #sys.exit(main(sys.argv[1:]))
