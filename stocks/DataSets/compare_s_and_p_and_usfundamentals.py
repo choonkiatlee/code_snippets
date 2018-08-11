@@ -1,53 +1,50 @@
 import pandas as pd
 import numpy as np
+import re
+
 
 usfundamentals = pd.read_csv('test.csv')
 s_and_p_500 = pd.read_csv('s_and_p_500_companies_list.csv')
 
-
+punctuation_list = r'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'        
+        
+regex_list = [
+    r'/[a-z]+/',  # match 2 letter state codes: eg; /DE/, /PA/, /MA/...
+    r'/[a-z]{2}', #used to match because some of the headings in the usfundamentals dataset is screwed
+    re.escape('\\de\\'),
+    '[{0}]'.format(re.escape(punctuation_list)),
+    r'company',
+    r'inc',
+    r'co(?![a-z])',
+    r'corporation',
+    r'corp(?![a-z]) [a-c]',
+    r'corp(?![a-z])',
+    r'class [a-c]',
+    r'com(?![a-z])',
+    r'plc',
+    r'the',
+    r'limited',
+    r'international',
+    r'intl',
+    r'company',
+    r'holdings',
+    r'ltd',
+    r'companies',
+    r'cos(?![a-z])',
+    r'group',
+    r'industries',
+    r'nv',           #hack
+    r'of washington' # hack
+]
+        
+regex = re.compile('|'.join(regex_list))
 
 
 # set to all lowercase and remove punctuation and things like inc, company, co 
 def convert_string(input_string):
-    
-    import re
-    
+        
     try:
-        input_string = input_string.lower()
-                
-        punctuation_list = r'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'        
-        
-        regex_list = [
-            r'/[a-z]+/',  # match 2 letter state codes: eg; /DE/, /PA/, /MA/...
-            r'/[a-z]{2}', #used to match because some of the headings in the usfundamentals dataset is screwed
-            re.escape('\\de\\'),
-            '[{0}]'.format(re.escape(punctuation_list)),
-            r'company',
-            r'inc',
-            r'co(?![a-z])',
-            r'corporation',
-            r'corp(?![a-z]) [a-c]',
-            r'corp(?![a-z])',
-            r'class [a-c]',
-            r'com(?![a-z])',
-            r'plc',
-            r'the',
-            r'limited',
-            r'international',
-            r'intl',
-            r'company',
-            r'holdings',
-            r'ltd',
-            r'companies',
-            r'cos(?![a-z])',
-            r'group',
-            r'industries',
-            r'nv',           #hack
-            r'of washington' # hack
-        ]
-                
-        regex = re.compile('|'.join(regex_list))
-        
+        input_string = input_string.lower()        
         return regex.sub('',input_string).strip().replace(' ','')
     except: 
         # not a valid string
