@@ -7,4 +7,5 @@ machine learning/data/
 *.p
 *.csv
 *.db
+*.txt
 
